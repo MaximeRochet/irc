@@ -10,11 +10,11 @@
 int main(int argc, char** argv)
 {
 	struct sockaddr_in address;
-	//char* hello = "hello from server"
-	//char buffer[1024] = { 0 };
-	int server_fd; //, new_socket, valread
-	//int addrlen = sizeof(address);
+	char buffer[1024] = { 0 };
+	int server_fd, new_socket, valread;
+	int addrlen = sizeof(address);
 	int opt = 1;
+	std::string hello("hello from server");
 
 	//AF_INET = adress familly (ipv4)
 	//SOCK_STREAM = type de flux
@@ -45,18 +45,42 @@ int main(int argc, char** argv)
 	//affectation du port
 	address.sin_port = htons(PORT);
 	
-	std::cout << "Valeur af_inet : " << AF_INET << std::endl;
-	std::cout << "Valeur sock_stream : " << SOCK_STREAM << std::endl;
+	std::cout << "Valeur AF_INET : " << AF_INET << std::endl;
+	std::cout << "Valeur SOCK_STREAM : " << SOCK_STREAM << std::endl;
 	std::cout << "Valeur PORT : " << PORT << std::endl;
 	std::cout << "Valeur INADDR_ANY : " << INADDR_ANY << std::endl;
 
 	//associe une socket a une adress et un port 
-	if(bind(server_fd, (struct sockaddr*)&address))
+	if(bind(server_fd, (struct sockaddr*)&address, addrlen))
 	{
 		perror("Bind fail");
 		exit(EXIT_FAILURE);
 	}
 
+	// met le serveur en mode passif et attend la connection de clients
+	// 3 = longuer max de le queue
+	if(listen(server_fd, 3) < 0)
+	{
+		perror("Listen fail");
+		exit(EXIT_FAILURE);
+	}
+
+	//creation d'une connection entre le serveur et le client 
+	if((new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0)
+	{
+		std::cout << "Valeur socket : " << new_socket << std::endl;
+		perror("Not accepted");
+		exit(EXIT_FAILURE);
+	}
+	
+	std::cout << "Valeur socket : " << new_socket << std::endl;
+	
+	valread = read(new_socket, buffer, 1024);
+	std::cout<< buffer << std::endl;
+	send(new_socket, hello.c_str(), hello.size(), 0);
+	
+	close(new_socket);
+	shutdown(server_fd, SHUT_RDWR);
 
 	return 0;
 }
